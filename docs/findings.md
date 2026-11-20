@@ -50,6 +50,13 @@ There is **no GNSS sensor API** in Vela and **no step/heart-rate/health API** ex
 - Layout orientation determines what you can batch: a **column-major** data layout (one `for` list per screen column) with one splice per changed column reached ~1 s per frame at 17 rows; with fewer, slower columns the same app settles at ~0.8 s per frame — the practical floor for that grid density on this device.
 - **Consequence:** for animated `<image>` grids, keep the data arrays stable, group changes per list, and issue exactly one splice per changed list. Canvas is not an alternative (see above).
 
+## Tap input works (verified 2026-11-20)
+
+- The rw4-poc template shipped **no touch handler**, so tap delivery was listed as unverified. It is now **verified on device**: a descendant app of this repo (rw4-magic8ball) binds `@click` **and** `@touchstart` on a root `<div>` and every tap reliably triggers its handler; the app's full tap → animation → state-change flow runs exactly as designed.
+- Which of the two event names the runtime actually emits was **not isolated** (both were bound at once, so either could be the source). The safe pattern is therefore to keep **both bound to one handler behind a short re-entry guard** (350 ms in rw4-magic8ball), which also swallows any duplicate delivery.
+- `vibrator.vibrate({mode:'short'|'long'})` is likewise **verified working** for both pulses in that app — no permission request, no manifest entry beyond `{"name": "system.vibrator"}`, and it works while the app is in the foreground.
+- Consequence: tap-driven quick apps are viable on this device (counters, timers, dice/coin-flip style apps, multi-state screens). Bind both events with a guard rather than betting on one.
+
 * * *
 
 # Cihaz üstü bulgular — rw4-poc (Redmi Watch 4)
@@ -103,3 +110,10 @@ Vela'da **GNSS sensör API'si yoktur** ve hızlı uygulamalara açık **adım/na
 - Mutasyonları toplu yapın: değişen liste başına **tek tam-aralık `splice`** (Vela JS motorunda güvenli olan biçimle: `splice.apply`) hücre başına splice'lardan iyidir (~3–4 sn → ~2 sn/kare), çünkü baskın maliyet mutasyon başına liste yeniden render'ıdır.
 - Topulaştırmayı yapabilen şey yerleşim yönüdür: **kolon-major** veri düzeni (ekran kolonu başına bir `for` listesi) ve değişen kolon başına tek splice ile 17 satırda kare başına ~1 sn'ye ulaşıldı; daha az ve daha yavaş kolonla aynı uygulama kare başına ~0,8 sn'de sabitlendi — bu cihazda o ızgara yoğunluğu için pratik taban.
 - **Sonuç:** canlandırılan `<image>` ızgaralarında veri dizilerini kararlı tutun, değişiklikleri liste başına gruplayın ve değişen her listeye tam olarak bir splice uygulayın. Canvas bir alternatif değildir (yukarıya bkz.).
+
+## Dokunma girdisi çalışıyor (2026-11-20'de doğrulandı)
+
+- rw4-poc şablonu **hiç dokunma işleyicisi içermiyordu**, bu yüzden dokunma teslimi doğrulanmamış olarak listelenmişti. Artık cihazda **doğrulandı**: bu depodan türeyen bir uygulama (rw4-magic8ball) kök `<div>` üzerinde hem `@click` hem `@touchstart` olayını bağlıyor ve her dokunuş işleyiciyi güvenilir biçimde tetikliyor; uygulamanın dokunuş → animasyon → durum değişimi akışının tamamı tasarlandığı gibi çalışıyor.
+- Çalışma zamanının gerçekte hangi olay adını yaydığı **ayrıştırılmadı** (ikisi aynı anda bağlıydı, kaynak her ikisi de olabilir). Bu yüzden güvenli desen, **ikisini de tek bir işleyiciye kısa bir yeniden giriş koruması arkasında** bağlamaktır (rw4-magic8ball'da 350 ms); bu aynı zamanda varsa çift teslimi de yutar.
+- `vibrator.vibrate({mode:'short'|'long'})` de o uygulamada her iki darbe için **çalışır durumda doğrulandı** — izin isteği yok, `{"name": "system.vibrator"}` dışında manifest girdisi gerekmiyor ve uygulama ön plandayken çalışıyor.
+- Sonuç: dokunmayla çalışan hızlı uygulamalar bu cihazda mümkündür (sayaçlar, zamanlayıcılar, zar/yazı-tura tarzı uygulamalar, çok durumlu ekranlar). Tek bir olaya güvenmek yerine iki olayı da koruma arkasında bağlayın.

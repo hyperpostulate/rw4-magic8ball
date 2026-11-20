@@ -66,7 +66,7 @@ The only working system APIs are: **JS clock (`new Date()`), `@system.storage` (
 - **Watch limits**: at most ~20 quick apps installed, ~87 MB of free space required for installs.
 - **"It works"** means the build succeeds **and** the on-device checklist passes — there is no local runtime, so test every change on the real watch.
 - **Before trying a new API**, check the table in [findings.md](findings.md): an unsupported API returns error `203` ("function not supported"), which the app cannot recover from.
-- **`@click` is not yet verified on device.** The table above assumes tap-driven apps, but this repo's template contains no touch handler — probe a tap on the real watch before building an app whose only input is touch.
+- **`@click`/`@touchstart` is verified on device.** The table above assumes tap-driven apps, and that now holds: rw4-magic8ball (a descendant app) drives its whole idle→rolling→answer flow from a tap on the root `<div>`, with `@click` and `@touchstart` both bound to one guarded handler.
 - **No background execution is expected.** Nothing in the verified API set runs code while the app is closed, so reminders, timers and vibration only work while the app is open (an inference to verify on device).
 
 * * *
@@ -125,5 +125,5 @@ Bu depo aynı zamanda bir **şablon artı cihaz kılavuzudur**: derleme zinciri 
 - **Saat sınırları**: en fazla ~20 hızlı uygulama kurulabilir, kurulum için ~87 MB boş alan gerekir.
 - **"Çalışıyor"un tanımı**: derleme başarılı **ve** cihaz üstü kontrol listesi geçiyor demektir — bu makinada çalışma zamanı yoktur; her değişikliği gerçek saatte test edin.
 - **Yeni bir API denemeden önce** [findings.md](findings.md)'deki tabloya bakın: desteklenmeyen API `203` hatası döndürür ("bu işlev desteklenmiyor") ve bu, uygulama tarafından giderilemez.
-- **`@click` henüz cihazda doğrulanmadı.** Yukarıdaki tablo dokunma temelli uygulamalar varsayıyor ama bu reponun şablonunda hiç dokunma işleyicisi yok — tek girdisi dokunma olan bir uygulama kurmadan önce gerçek saatte bir dokunma denemesi yapın.
+- **`@click`/`@touchstart` cihazda doğrulandı.** Yukarıdaki tablo dokunma temelli uygulamalar varsayıyor ve bu artık geçerli: rw4-magic8ball (türev bir uygulama) boşta→dönüş→cevap akışının tamamını kök `<div>` üzerindeki dokunuşla sürüyor; `@click` ve `@touchstart` tek, korumalı bir işleyiciye bağlı.
 - **Arka plan yürütme beklenmiyor.** Doğrulanmış API kümesinde uygulama kapalıyken kod çalıştıran hiçbir şey yok; dolayısıyla hatırlatıcı, zamanlayıcı ve titreşim yalnız uygulama açıkken çalışır (cihazda doğrulanması gereken bir çıkarım).

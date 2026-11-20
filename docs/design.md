@@ -97,9 +97,9 @@ list is fixed and asserted to fit at build time.
 ## 6. Motion & interaction
 
 The whole screen is the hit area. Pointer events: `@click` **and** `@touchstart` are both
-bound to the same handler with a 350 ms re-entry guard, because tap delivery is not yet
-verified on this device; whichever event the runtime actually delivers triggers the flow
-and double delivery is swallowed by the guard.
+bound to the same handler with a 350 ms re-entry guard. Tap input is **verified working on
+device** (2026-11-20); the exact event name the runtime emits was not isolated, so both
+stay bound and the guard swallows any duplicate delivery.
 
 ```
 IDLE ──tap──> ROLLING (600 ms) ──> ANSWER ──tap──> ROLLING ──> ANSWER ...
@@ -113,8 +113,9 @@ IDLE ──tap──> ROLLING (600 ms) ──> ANSWER ──tap──> ROLLING �
 3. Settle: pick answer `i = floor(random() * 20)`, face src = `ans<i>`, `vibrator.vibrate({mode:'long'})`.
 4. Next tap repeats from 1. No timer runs while idle; everything stops in `onHide`/`onDestroy`.
 
-Vibration is best-effort: imported from `@system.vibrator` inside `try/catch`, and a
-failure must never break the visual flow.
+Vibration is **verified working** on device for both pulses (`mode:'short'` on tap,
+`mode:'long'` on settle). It stays inside `try/catch` so a firmware regression can never
+break the visual flow.
 
 ## 7. Copy
 

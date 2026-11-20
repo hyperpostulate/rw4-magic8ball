@@ -62,7 +62,7 @@ Cevaplar klasik kümedir: 10 olumlu, 5 kararsız, 5 olumsuz; her biri 1/20 olas�
 
 `.rpk` dosyası, Android telefondan Bluetooth üzerinden **[Notify for Xiaomi](https://play.google.com/store/apps/details?id=com.mc.xiaomi1)** uygulamasıyla kurulur (paket adı `com.mc.xiaomi1`, geliştirici OneZeroBit). Redmi Watch 4 uygulamanın resmî uyumluluk listesindedir ve uygulamanın resmî sitesi özel VelaJS (`.rpk`) uygulamalarının bu yolla kurulduğunu belgeler.
 
-> **Doğrulama durumu:** kurulum yolu, ana şablon (PoC) ile gerçek bir Redmi Watch 4 üzerinde doğrulandı. Bu uygulamada henüz cihazda denenmemiş tek parça dokunma (tap) işleyişidir — aşağıdaki kontrol listesine bakın.
+> **Doğrulama durumu:** gerçek bir Redmi Watch 4 üzerinde tamamen doğrulandı — uygulama kuruluyor, dokunuş boşta→dönüş→cevap akışını sürüyor ve her iki titreşim darbesi de çalışıyor.
 
 > **Her derlemede sürümü artırın.** Notify for Xiaomi ve saat, hızlı uygulama paketlerini `versionName` ve `versionCode` ile önbelleğe alır. İkisi de değişmezse taze `.rpk` yerine önbellekteki derleme kurulabilir. Her derlemeden önce `src/manifest.json` içindeki iki alanı da artırın; `versionName` aynı zamanda çıktı dosya adının parçasıdır, böylece her sürüm ayrı bir dosya olur (`dist/com.hyperpostulate.rw4magic8ball.debug.<versionName>.rpk`).
 
@@ -118,13 +118,15 @@ Derleme `dist/com.hyperpostulate.rw4magic8ball.debug.1.0.0.rpk` dosyasını üre
 
 ### Cihaz üstü kontrol listesi
 
-1. Uygulama boşta kartla açılıyor mu (başlık, "8" halkası, `Tap to seek answer…`)?
-2. **Dokunuş dönüşü başlatıyor mu?** Bu, ailede dokunmaya bağlı ilk uygulama; hiçbir şey olmuyorsa çözüm `@click` ile `@touchstart` teslimini loglayıp hiç tetiklenmeyeni kaldırmaktır (ikisi de hâlihazırda bağlı).
-3. 6 yay karesi canlanıyor ve ~0,7 sn içinde bir cevap geliyor mu?
-4. Cevap en fazla 3 satıra sarıyor ve karttan taşmıyor mu?
-5. Dokunuşta ve cevap oturunca titreşim geliyor mu? (En iyi gayret; sessiz saat kabul edilebilir.)
-6. İkinci dokunuş yeniden döndürüyor mu, ipucu dönüş sırasında `ask` olarak kalıyor mu?
-7. Ekranın yuvarlak köşeleri hiçbir şeyi kırpıyor mu (başlık, ipucu, kart kenarı)?
+Aşağıdaki yedi kontrolün tamamı **gerçek bir Redmi Watch 4 üzerinde geçiyor** (2026-11-20'de doğrulandı). Bir değişiklikten sonra regresyon için listeyi koruyun.
+
+1. Uygulama boşta kartla açılıyor mu (başlık, "8" halkası, `Tap to seek answer…`)? ✅
+2. **Dokunuş dönüşü başlatıyor mu?** ✅ Hem `@click` hem `@touchstart` bağlı; çalışma zamanının hangisini yaydığı ayrıştırılmadı, bu yüzden ikisi 350 ms korumanın arkasında bağlı kalıyor.
+3. 6 yay karesi canlanıyor ve ~0,7 sn içinde bir cevap geliyor mu? ✅
+4. Cevap en fazla 3 satıra sarıyor ve karttan taşmıyor mu? ✅
+5. Dokunuşta ve cevap oturunca titreşim geliyor mu? ✅ İki darbe de teyit edildi.
+6. İkinci dokunuş yeniden döndürüyor mu, ipucu dönüş sırasında `ask` olarak kalıyor mu? ✅
+7. Ekranın yuvarlak köşeleri hiçbir şeyi kırpmıyor mu (başlık, ipucu, kart kenarı)? ✅
 
 * * *
 
@@ -198,7 +200,7 @@ Saat görselleri **yol bazında** önbelleğe aldığı için varlık adları i�
 - **Hangi sistem API'leri çalışıyor.** `@system.device`, `@system.storage`, `@system.brightness`, `@system.app`, `@system.vibrator` ve JS saati çalışıyor; geolocation (GPS, hata `203`), sensor, battery, network, bluetooth, record, fetch ve crypto çalışmıyor.
 - **Canvas saati çökertiyor** — siyah ekran, ardından çalışma zamanı yeniden başlaması. Tek seçenek `<image>` çizici.
 - **Simge boyutu uygulama adını kaydırıyor**: **96×96** `logo.png` bilinçli (`192×192` etiketi satırın ortasına itiyordu).
-- **`@click` teslimi doğrulanmadı.** Uygulama hem `@click` hem `@touchstart` olayını 350 ms korumalı aynı işleyiciye bağlar; hangisi tetiklenirse o kazanır, çift teslim yutulur.
+- **Dokunma girdisi ve titreşim doğrulandı.** `@click` ve `@touchstart` 350 ms korumanın arkasında tek işleyiciye bağlı — çalışma zamanı dokunuşları güvenilir teslim ediyor, ancak iki olay adından *hangisini* yaydığı ayrıştırılmadı, bu yüzden ikisi bağlı kalıyor. `vibrator.vibrate()` kısa (dokunuş) ve uzun (cevap) darbenin ikisini de üretiyor.
 
 * * *
 

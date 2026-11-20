@@ -62,7 +62,7 @@ Answers are the canonical set, 10 affirmative / 5 non-committal / 5 negative, ea
 
 The `.rpk` is installed over Bluetooth from an Android phone using the **[Notify for Xiaomi](https://play.google.com/store/apps/details?id=com.mc.xiaomi1)** app (package `com.mc.xiaomi1`, by OneZeroBit). The Redmi Watch 4 is on the app's official compatibility list, and the app's official site documents installing custom VelaJS (`.rpk`) apps this way.
 
-> **Verification status:** the install path is verified on a real Redmi Watch 4 with the parent PoC. This app's tap handling is the one part that still needs a first on-device run — see the checklist below.
+> **Verification status:** fully verified on a real Redmi Watch 4 — the app installs, tap input drives the idle→rolling→answer flow exactly as designed, and both vibration pulses fire.
 
 > **Bump the version on every build.** Notify for Xiaomi and the watch cache quick-app packages by `versionName` and `versionCode`. If both are unchanged, the cached build can be installed instead of the fresh `.rpk`. Before every build, increment both fields in `src/manifest.json`; `versionName` is also part of the output filename, so a bump gives a distinct file as well (`dist/com.hyperpostulate.rw4magic8ball.debug.<versionName>.rpk`).
 
@@ -118,13 +118,15 @@ The build produces `dist/com.hyperpostulate.rw4magic8ball.debug.1.0.0.rpk`. The 
 
 ### On-device checklist
 
-1. Does the app open on the idle card (title, "8" ring, `Tap to seek answer…`)?
-2. **Does a tap start the spin?** This is the first app in the family to depend on touch; if it does nothing, the fallback is to log `@click` vs `@touchstart` delivery and drop the one that never fires (both are already bound).
-3. Do 6 arc frames animate, then an answer appear within ~0.7 s?
-4. Does the answer text wrap into at most 3 lines, never clipped by the card?
-5. Does the vibration pulse on tap and on settle? (Best-effort; a silent watch is acceptable.)
-6. Does a second tap roll again, and does the hint stay hidden/`ask` during the roll?
-7. Are the rounded screen corners cropping nothing (title, hint, card edge)?
+All seven checks below **pass on a real Redmi Watch 4** (verified 2026-11-20). Keep the list for regression runs after a change.
+
+1. Does the app open on the idle card (title, "8" ring, `Tap to seek answer…`)? ✅
+2. **Does a tap start the spin?** ✅ Both `@click` and `@touchstart` are bound; which one the runtime emits was never isolated, so the pair stays bound behind the 350 ms guard.
+3. Do 6 arc frames animate, then an answer appear within ~0.7 s? ✅
+4. Does the answer text wrap into at most 3 lines, never clipped by the card? ✅
+5. Does the vibration pulse on tap and on settle? ✅ Both pulses confirmed.
+6. Does a second tap roll again, and does the hint stay `ask` during the roll? ✅
+7. Are the rounded screen corners cropping nothing (title, hint, card edge)? ✅
 
 * * *
 
@@ -198,7 +200,7 @@ Verified on a **real Redmi Watch 4**. Full detail — including the complete sys
 - **Which system APIs work.** `@system.device`, `@system.storage`, `@system.brightness`, `@system.app`, `@system.vibrator` and the JS clock work; geolocation (GPS, error `203`), sensor, battery, network, bluetooth, record, fetch and crypto do not.
 - **Canvas crashes the watch** — black screen, then a runtime reboot. The `<image>` renderer is the only option.
 - **Launcher icon size moves the app name**: the **96×96** `logo.png` is deliberate (`192×192` pushed the label into the middle of the row).
-- **`@click` delivery is unverified.** This app binds both `@click` and `@touchstart` to the same handler with a 350 ms guard so whichever fires wins, and double delivery is swallowed.
+- **Tap input and vibration are verified.** `@click` and `@touchstart` are both bound to one handler behind a 350 ms guard — the runtime delivers taps reliably, but *which* of the two event names it emits was never isolated, so the pair stays. `vibrator.vibrate()` fires both the short (tap) and long (settle) pulse.
 
 * * *
 
