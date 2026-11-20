@@ -32,6 +32,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -79,35 +80,71 @@ RING_DIM = 0.28  # alpha multiplier of the spinner's track ring
 LOGO_SIZE = 96
 
 # ---- copy (docs/design.md 7) ----
+# The title is the product name and stays English in every locale.
 APP_TITLE = "MAGIC 8 BALL"
-HINT_ASK = "Tap to seek answer\u2026"
-HINT_AGAIN = "Tap to ask again"
 
-ANSWERS = [
-    # affirmative -> PRIMARY
-    ("affirmative", "It is certain."),
-    ("affirmative", "It is decidedly so."),
-    ("affirmative", "Without a doubt."),
-    ("affirmative", "Yes definitely."),
-    ("affirmative", "You may rely on it."),
-    ("affirmative", "As I see it, yes."),
-    ("affirmative", "Most likely."),
-    ("affirmative", "Outlook good."),
-    ("affirmative", "Yes."),
-    ("affirmative", "Signs point to yes."),
-    # non-committal -> MUTED
-    ("unclear", "Reply hazy, try again."),
-    ("unclear", "Ask again later."),
-    ("unclear", "Better not tell you now."),
-    ("unclear", "Cannot predict now."),
-    ("unclear", "Concentrate and ask again."),
-    # negative -> WARN
-    ("negative", "Don't count on it."),
-    ("negative", "My reply is no."),
-    ("negative", "My sources say no."),
-    ("negative", "Outlook not so good."),
-    ("negative", "Very doubtful."),
-]
+# Every other visible string is per-locale. Answer order and category must stay
+# identical across locales, because the face indices are shared at runtime
+# (ans00..ans19) and only the asset directory changes with the locale.
+LOCALES = {
+    "en": {
+        "hint_ask": "Tap to seek answer\u2026",
+        "hint_again": "Tap to ask again",
+        "answers": [
+            # affirmative -> PRIMARY
+            ("affirmative", "It is certain."),
+            ("affirmative", "It is decidedly so."),
+            ("affirmative", "Without a doubt."),
+            ("affirmative", "Yes definitely."),
+            ("affirmative", "You may rely on it."),
+            ("affirmative", "As I see it, yes."),
+            ("affirmative", "Most likely."),
+            ("affirmative", "Outlook good."),
+            ("affirmative", "Yes."),
+            ("affirmative", "Signs point to yes."),
+            # non-committal -> MUTED
+            ("unclear", "Reply hazy, try again."),
+            ("unclear", "Ask again later."),
+            ("unclear", "Better not tell you now."),
+            ("unclear", "Cannot predict now."),
+            ("unclear", "Concentrate and ask again."),
+            # negative -> WARN
+            ("negative", "Don't count on it."),
+            ("negative", "My reply is no."),
+            ("negative", "My sources say no."),
+            ("negative", "Outlook not so good."),
+            ("negative", "Very doubtful."),
+        ],
+    },
+    "tr": {
+        "hint_ask": "Cevap i\u00e7in dokun\u2026",
+        "hint_again": "Tekrar sormak i\u00e7in dokun",
+        "answers": [
+            ("affirmative", "Kesinlikle \u00f6yle."),
+            ("affirmative", "Hi\u00e7 ku\u015fkusuz \u00f6yle."),
+            ("affirmative", "\u015e\u00fcphesiz."),
+            ("affirmative", "Kesinlikle evet."),
+            ("affirmative", "Buna g\u00fcvenebilirsin."),
+            ("affirmative", "Bence evet."),
+            ("affirmative", "B\u00fcy\u00fck ihtimalle."),
+            ("affirmative", "G\u00f6r\u00fcn\u00fcm iyi."),
+            ("affirmative", "Evet."),
+            ("affirmative", "\u0130\u015faretler evet diyor."),
+            ("unclear", "Cevap belirsiz, tekrar sor."),
+            ("unclear", "Sonra tekrar sor."),
+            ("unclear", "\u015eimdi s\u00f6ylemeyeyim."),
+            ("unclear", "\u015eu an tahmin edemem."),
+            ("unclear", "Odaklan ve tekrar sor."),
+            ("negative", "Buna g\u00fcvenme."),
+            ("negative", "Cevab\u0131m hay\u0131r."),
+            ("negative", "Kaynaklar\u0131m hay\u0131r diyor."),
+            ("negative", "G\u00f6r\u00fcn\u00fcm pek iyi de\u011fil."),
+            ("negative", "\u00c7ok \u015f\u00fcpheli."),
+        ],
+    },
+}
+
+LOCALE_ORDER = ("en", "tr")
 
 CAT_COLOR = {"affirmative": PRIMARY, "unclear": MUTED, "negative": WARN}
 
@@ -128,10 +165,33 @@ def _spec_stamp():
                      CARD_STROKE, ANS_BOX, ANS_LINE_H, ANS_SIZES, RING_D, RING_W,
                      ARC_W, RING_DIM],
         "type": [TITLE_SIZE, TITLE_TRACK, HINT_SIZE, HINT_TRACK, EMBLEM_SIZE, LOGO_SIZE],
-        "copy": [APP_TITLE, HINT_ASK, HINT_AGAIN, ANSWERS],
+        "copy": [APP_TITLE, LOCALES],
         "render": [SS, ROLL_FRAMES],
     }, sort_keys=True).encode("utf-8")
     return hashlib.sha256(spec).hexdigest()[:8]
+
+
+def _assert_glyph_coverage():
+    """Every character in every locale must actually draw ink.
+
+    The shipped fonts are subsets; a missing codepoint renders as nothing (or a
+    notdef box), which the PNG verification cannot distinguish from real text.
+    U+FFFF draws nothing in DejaVu, so it is the 'missing' baseline.
+    """
+    missing = []
+    for path in (FONT_BOOK, FONT_BOLD):
+        font = _font(path, 40)
+        for loc, copy in LOCALES.items():
+            strings = [copy["hint_ask"], copy["hint_again"]]
+            strings += [text for _, text in copy["answers"]]
+            for ch in set("".join(strings)):
+                if ch == " ":
+                    continue
+                img = Image.new("L", (90, 90), 0)
+                ImageDraw.Draw(img).text((10, 10), ch, font=font, fill=255)
+                if sum(img.tobytes()) == 0:
+                    missing.append((os.path.basename(path), loc, ch))
+    assert not missing, ("font is missing glyphs", missing)
 
 
 def _new(size):
@@ -193,13 +253,17 @@ def _wrap(text, font, max_w):
     return lines
 
 
-def _pick_answer_font():
-    """Largest size from ANS_SIZES that fits every answer in ANS_BOX: <=3 lines, height ok."""
+def _pick_answer_font(answers):
+    """Largest size from ANS_SIZES that fits every answer in ANS_BOX: <=3 lines, height ok.
+
+    Chosen per locale: Turkish answers are longer than the English originals, so
+    the two locales can settle on different sizes and still share the same box.
+    """
     box_w, box_h = ANS_BOX[2], ANS_BOX[3]
     for size in ANS_SIZES:
         font = _font(FONT_BOOK, size)
         ok = True
-        for _, text in ANSWERS:
+        for _, text in answers:
             lines = _wrap(text, font, box_w)
             if len(lines) > 3 or len(lines) * ANS_LINE_H > box_h:
                 ok = False
@@ -342,55 +406,83 @@ def _version():
 
 
 def main():
+    # Wipe and recreate the whole asset tree: locale subdirectories are managed
+    # here too, so a removed locale cannot leave stale PNGs behind.
     for d in (TXT_DIR, FACE_DIR):
         if os.path.isdir(d):
-            for name in os.listdir(d):
-                if name.endswith(".png"):
-                    os.remove(os.path.join(d, name))
+            shutil.rmtree(d)
         os.makedirs(d, exist_ok=True)
 
+    _assert_glyph_coverage()
+
     stamp = _spec_stamp()
-    answer_size = _pick_answer_font()
     suffix = "_" + stamp + ".png"
 
-    def txt(stem):
-        return os.path.join(TXT_DIR, stem + suffix)
-
-    def face(stem):
-        return os.path.join(FACE_DIR, stem + suffix)
-
     make_logo(os.path.join(COMMON, "logo.png"))
-    make_title(txt("title"))
-    make_hint(txt("hint_ask"), HINT_ASK)
-    make_hint(txt("hint_again"), HINT_AGAIN)
-    make_idle(face("idle"))
-    for i in range(ROLL_FRAMES):
-        make_roll(face("roll%d" % i), i)
-    for i, (cat, text) in enumerate(ANSWERS):
-        make_answer(face("ans%02d" % i), text, CAT_COLOR[cat], answer_size)
+    # The title is the product name: one shared asset for every locale.
+    make_title(os.path.join(TXT_DIR, "title" + suffix))
 
-    ans_srcs = ",\n  ".join("'/common/face/ans%02d%s'" % (i, suffix) for i in range(len(ANSWERS)))
-    roll_srcs = ",\n  ".join("'/common/face/roll%d%s'" % (i, suffix) for i in range(ROLL_FRAMES))
+    sizes = {}
+    for loc in LOCALE_ORDER:
+        copy = LOCALES[loc]
+        txt_dir = os.path.join(TXT_DIR, loc)
+        face_dir = os.path.join(FACE_DIR, loc)
+        os.makedirs(txt_dir, exist_ok=True)
+        os.makedirs(face_dir, exist_ok=True)
+
+        answer_size = _pick_answer_font(copy["answers"])
+        sizes[loc] = answer_size
+
+        make_hint(os.path.join(txt_dir, "hint_ask" + suffix), copy["hint_ask"])
+        make_hint(os.path.join(txt_dir, "hint_again" + suffix), copy["hint_again"])
+        make_idle(os.path.join(face_dir, "idle" + suffix))
+        for i in range(ROLL_FRAMES):
+            make_roll(os.path.join(face_dir, "roll%d%s" % (i, suffix)), i)
+        for i, (cat, text) in enumerate(copy["answers"]):
+            make_answer(os.path.join(face_dir, "ans%02d%s" % (i, suffix)),
+                        text, CAT_COLOR[cat], answer_size)
+
+    entries = []
+    for loc in LOCALE_ORDER:
+        copy = LOCALES[loc]
+        ans_srcs = ",\n      ".join(
+            "'/common/face/%s/ans%02d%s'" % (loc, i, suffix)
+            for i in range(len(copy["answers"])))
+        roll_srcs = ",\n      ".join(
+            "'/common/face/%s/roll%d%s'" % (loc, i, suffix)
+            for i in range(ROLL_FRAMES))
+        entries.append("\n".join([
+            "  " + loc + ": {",
+            "    hintAsk: '/common/txt/%s/hint_ask%s'," % (loc, suffix),
+            "    hintAgain: '/common/txt/%s/hint_again%s'," % (loc, suffix),
+            "    idle: '/common/face/%s/idle%s'," % (loc, suffix),
+            "    roll: [\n      " + roll_srcs + "\n    ],",
+            "    ans: [\n      " + ans_srcs + "\n    ]",
+            "  }",
+        ]))
 
     block = "\n".join([
         "// __ASSETS_BEGIN__ generated by scripts/gen_assets.py - do not edit by hand",
         "// stamp: " + stamp + " (content hash; changes whenever copy/geometry changes)",
         "// version: " + _version(),
+        "// LOCALE is rewritten by scripts/build.py for each .rpk; both asset sets ship.",
+        "const LOCALE = 'en'",
         "const TITLE_SRC = '/common/txt/title" + suffix + "'",
-        "const HINT_ASK_SRC = '/common/txt/hint_ask" + suffix + "'",
-        "const HINT_AGAIN_SRC = '/common/txt/hint_again" + suffix + "'",
-        "const FACE_IDLE = '/common/face/idle" + suffix + "'",
-        "const FACE_ROLL = [\n  " + roll_srcs + "\n]",
-        "const FACE_ANS = [\n  " + ans_srcs + "\n]",
+        "const COPY = {",
+        ",\n".join(entries),
+        "}",
         "// __ASSETS_END__",
     ])
     _sync_ux(block)
 
-    print("stamp %s | answers %d @ %dpx | roll frames %d | logo %dpx"
-          % (stamp, len(ANSWERS), answer_size, ROLL_FRAMES, LOGO_SIZE))
+    print("stamp %s | roll frames %d | logo %dpx | title shared" %
+          (stamp, ROLL_FRAMES, LOGO_SIZE))
+    for loc in LOCALE_ORDER:
+        print("  %s: hint + idle + %d roll + %d answers @ %dpx"
+              % (loc, ROLL_FRAMES, len(LOCALES[loc]["answers"]), sizes[loc]))
+    total = 1 + 1 + sum(2 + 1 + ROLL_FRAMES + len(LOCALES[l]["answers"]) for l in LOCALE_ORDER)
     print("wrote %d PNGs into %s and %s"
-          % (1 + 3 + 1 + ROLL_FRAMES + len(ANSWERS),
-             os.path.relpath(TXT_DIR, ROOT), os.path.relpath(FACE_DIR, ROOT)))
+          % (total, os.path.relpath(TXT_DIR, ROOT), os.path.relpath(FACE_DIR, ROOT)))
 
 
 if __name__ == "__main__":

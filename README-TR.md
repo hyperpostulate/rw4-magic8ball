@@ -9,7 +9,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Xiaomi%20Vela-blue" alt="Platform: Xiaomi Vela">
   <img src="https://img.shields.io/badge/device-Redmi%20Watch%204-orange" alt="Cihaz: Redmi Watch 4">
-  <img src="https://img.shields.io/badge/version-1.0.0-green" alt="Sürüm 1.0.0">
+  <img src="https://img.shields.io/badge/version-1.1.0-green" alt="Sürüm 1.1.0">
   <img src="https://img.shields.io/badge/license-GPLv3-blue" alt="Lisans: GPLv3">
 </p>
 
@@ -17,7 +17,7 @@
 
 <p align="center">English version: <a href="README.md">README.md</a></p>
 
-[1950'den beri bilinen](https://en.wikipedia.org/wiki/Magic_8_Ball) Magic 8 Ball oyuncağı, Redmi Watch 4 üzerinde tek ekranlık bir `.rpk` olarak yeniden yapıldı. Klasik 20 cevabın tamamı uygulamanın içinde ve eşit olasılıkla seçiliyor. [rw4-poc](https://github.com/hyperpostulate/rw4-poc) şablonu üzerine kurulu olduğu için cihazın gerçekten izin verdiği sınırların içinde kalıyor: metin çizimi yok, canvas yok, ağ yok.
+[1950'den beri bilinen](https://en.wikipedia.org/wiki/Magic_8_Ball) Magic 8 Ball oyuncağı, Redmi Watch 4 üzerinde tek ekranlık bir `.rpk` olarak yeniden yapıldı. Klasik 20 cevabın tamamı uygulamanın içinde ve eşit olasılıkla seçiliyor. **İngilizce ve Türkçe**: tek derleme bir `.en.rpk` ve bir `.tr.rpk` üretiyor. [rw4-poc](https://github.com/hyperpostulate/rw4-poc) şablonu üzerine kurulu olduğu için cihazın gerçekten izin verdiği sınırların içinde kalıyor: metin çizimi yok, canvas yok, ağ yok.
 
 * * *
 
@@ -47,6 +47,8 @@ Tek ekran, üç durum, tek girdi: **ekranın herhangi bir yerine dokun**.
 | **Cevap** | Kartta 20 cevaptan biri, ipucu `Tap to ask again` | cevap oturunca uzun titreşim |
 
 Cevaplar klasik kümedir: 10 olumlu, 5 kararsız, 5 olumsuz; her biri 1/20 olasılıkla gelir — klasik topun hafızası da yanlılığı da yoktur. Cevabın rengi kategorisini taşır: olumluda beyaza yakın, kararsızda gümüş mavisi, olumsuzda soluk gül.
+
+**Diller:** İngilizce ve Türkçe, derleme zamanında seçilir. Başlık ikisinde de `MAGIC 8 BALL` kalır; iki ipucu ve 20 cevabın tamamı çevrilir. `npm run build` iki paketi de aynı uygulama kimliğiyle üretir, yani diğerini kurmak dili yerinde değiştirir.
 
 ```
 ┌───────────────────────────────┐    ┌───────────────────────────────┐
@@ -79,19 +81,20 @@ Cevaplar klasik kümedir: 10 olumlu, 5 kararsız, 5 olumsuz; her biri 1/20 olas�
 
 ### Adımlar
 
-1. Paketi derleyin: `npm run build` → `dist/com.hyperpostulate.rw4magic8ball.debug.1.0.0.rpk`.
+1. Paketleri derleyin: `npm run build` → `dist/com.hyperpostulate.rw4magic8ball.debug.1.1.0.en.rpk` ve `…​.tr.rpk`.
 2. **Notify for Xiaomi** uygulamasını açın.
 3. **Device** bölümüne gidin.
 4. **Third party app** seçeneğini seçin.
-5. `.rpk` dosyasını seçin.
+5. İstediğiniz dilin `.rpk` dosyasını seçin (`.en` veya `.tr`).
 6. Saati telefonun yanında tutun ve yönlendirilen adımları izleyin.
-7. Kurulum bitince saatteki uygulama listesinde **Magic 8 Ball** görünür.
+7. Kurulum bitince saatteki uygulama listesinde **Magic 8 Ball** görünür — kurduğunuz paketin dilinde.
 
 ### Notlar
 
 - `npm run build` ile üretilen debug imzalı `.rpk` bu uygulama için yeterlidir: Vela sertifikayı yalnızca saat↔telefon Interconnect iletişiminde denetler; bu uygulama onu kullanmıyor.
 - Redmi Watch 4 sınırları: en fazla ~20 hızlı uygulama kurulabilir, kurulum için ~87 MB boş alan gerekir.
 - Güncelleme için yeni bir `.rpk` derleyip aynı paket adının (`com.hyperpostulate.rw4magic8ball`) üzerine kurun. `package` değerini değiştirmek güncelleme yerine **ayrı** bir uygulama kurar.
+- **Dil değiştirmek diğer paketi kurmaktır**: iki dil de aynı uygulama kimliğini kullanır, yani `.tr.rpk` saatte ikinci bir simge oluşturmak yerine `.en.rpk`'nın yerine geçer.
 - Doğrulanmamış ayrıntılar: `.rpk` kurulumlarını hangi uygulama sürümünün başlattığı ve bu özelliğin (yaklaşık 3 €, tek seferlik) PRO satın alımı gerektirip gerektirmediği resmî olarak belgelenmemiş. Yukarıdaki menü adları İngilizce olanlardır; uygulama yerelleştirilmiştir ancak Türkçe etiketler doğrulanmamıştır.
 
 Kaynaklar: [Notify for Xiaomi VelaJS kurulum kılavuzu](https://mibandnotify.com/xiaomi-mi-band/notify-xms-app-instructions.php) · [Google Play sayfası](https://play.google.com/store/apps/details?id=com.mc.xiaomi1)
@@ -112,13 +115,14 @@ Kaynaklar: [Notify for Xiaomi VelaJS kurulum kılavuzu](https://mibandnotify.com
 git clone https://github.com/hyperpostulate/rw4-magic8ball.git
 cd rw4-magic8ball
 npm install                          # aiot-toolkit zincirini kur
-npm run build                        # dist/ içine debug .rpk üret
+npm run build                        # dil başına bir debug .rpk üret (dist/ içinde .en + .tr)
+npm run build:tr                     # yalnızca tek dil derle (build:en, build:tr)
 npm run release                      # release .rpk (imza anahtarları gerekir)
 npm run start                        # aiot start --watch (canlı geliştirme)
 python3 scripts/gen_assets.py        # PNG varlıklarını koddan yeniden üret
 ```
 
-Derleme `dist/com.hyperpostulate.rw4magic8ball.debug.1.0.0.rpk` dosyasını üretir. Debug `.rpk` imza gerektirmez; release paketi için `sign/private.pem` ve `sign/certificate.pem` gerekir (OpenSSL ile üretin).
+Derleme `dist/com.hyperpostulate.rw4magic8ball.debug.1.1.0.en.rpk` ve `dist/com.hyperpostulate.rw4magic8ball.debug.1.1.0.tr.rpk` dosyalarını üretir. Debug `.rpk` imza gerektirmez; release paketi için `sign/private.pem` ve `sign/certificate.pem` gerekir (OpenSSL ile üretin).
 
 ### Cihaz üstü kontrol listesi
 
@@ -143,13 +147,14 @@ rw4-magic8ball/
 │   ├── app.ux                 # uygulama girişi (onCreate/onDestroy)
 │   ├── common/
 │   │   ├── logo.png           # başlatıcı simgesi: lacivert kare + halka + "8", 96x96
-│   │   ├── txt/               # başlık + iki ipucu (üretilmiş)
-│   │   └── face/              # boşta + 6 dönüş + 20 cevap yüzü (üretilmiş)
+│   │   ├── txt/               # başlık (ortak) + <dil>/hint_ask, <dil>/hint_again (üretilmiş)
+│   │   └── face/              # <dil>/: boşta + 6 dönüş + 20 cevap yüzü (üretilmiş)
 │   └── pages/
 │       └── index/
 │           └── index.ux       # uygulamanın tamamı: 3 görsel, durum makinesi, stiller
 ├── scripts/
-│   ├── gen_assets.py          # 31 PNG'nin yeniden üretilebilir Pillow üreteci
+│   ├── gen_assets.py          # 60 PNG'nin (en + tr) yeniden üretilebilir Pillow üreteci
+│   ├── build.py               # dil başına bir .rpk (`npm run build` bunu çalıştırır)
 │   └── assets/
 │       ├── ui-subset.ttf          # DejaVu Sans Book (yalnızca üretim anında)
 │       └── DejaVuSans-Bold.ttf    # yalnızca üretim anında
@@ -172,7 +177,8 @@ rw4-magic8ball/
 | :-- | :-- |
 | `src/manifest.json` | Vela manifesti: `package` = `com.hyperpostulate.rw4magic8ball`, `name` = `Magic 8 Ball`, `deviceTypeList: ["watch"]`, `designWidth: 390`, `features: ["system.router", "system.vibrator"]` |
 | `src/pages/index/index.ux` | Uygulamanın tamamı: şablon (başlık, yüz, ipucu), boşta→dönüş→cevap durum makinesi, dokunma koruması, zamanlayıcılar, stiller, üretilmiş varlık adları |
-| `scripts/gen_assets.py` | Kart yüzlerini, başlığı, ipuçlarını ve simgeyi belirlenimci biçimde üretir; dosya adlarına içerik damgası koyar ve `index.ux` içindeki varlık bloğunu kendisi günceller |
+| `scripts/gen_assets.py` | İki dil için kart yüzlerini, başlığı, ipuçlarını ve simgeyi belirlenimci biçimde üretir; dosya adlarına içerik damgası koyar ve `index.ux` içindeki varlık bloğunu kendisi günceller |
+| `scripts/build.py` | `LOCALE` değerini değiştirir, `aiot build` çalıştırır ve her dil için `dist/<paket>.<mod>.<sürüm>.<dil>.rpk` yayımlar |
 | `docs/design.md` | Yetkili arayüz spesifikasyonu (palet, geometri, tipografi, hareket, metin listesi) |
 
 * * *
@@ -186,7 +192,7 @@ Her sayı **[docs/design.md](docs/design.md)** içinde. Kısacası:
 - Tuval 390×450; içerik y = 398'de biter çünkü kavisli cam köşeleri kırpıyor.
 - Başlık (35,34) konumunda 320×34; kart (40,86) konumunda 310×280; ipucu (35,374) konumunda 320×24.
 - Kartın içindeki cevap kutusu 242×184, 30 px DejaVu Sans Book, 38 px satır yüksekliği, sözcük bazlı sarma, en fazla 3 satır — herhangi bir cevap taşarsa üreteç 28/26 px'e iner ve bloğun sığdığını doğrular.
-- 31 PNG, ekranda 3 `<image>` düğümü.
+- 60 PNG (iki dil), ekranda 3 `<image>` düğümü.
 
 ### Neden her şey PNG
 
@@ -211,7 +217,8 @@ Saat görselleri **yol bazında** önbelleğe aldığı için varlık adları i�
 ## Sınırlar
 
 - **Ağ, GPS, sensör yok.** Cevaplar sabit yerel bir listedir; hiçbir şey indirilmez veya ortamdan hesaplanmaz.
-- **Metin görsel olmak zorunda.** Cevap eklemek ya da düzenlemek `scripts/gen_assets.py` içindeki `ANSWERS` listesini değiştirmek, üreteci çalıştırmak ve yeniden derlemek demektir — metin dizgi olarak değil, PNG olarak derlenir.
+- **Metin görsel olmak zorunda.** Cevap eklemek ya da düzenlemek `scripts/gen_assets.py` içindeki `LOCALES` listesini değiştirmek, üreteci çalıştırmak ve yeniden derlemek demektir — metin dizgi olarak değil, PNG olarak derlenir. İki dil de aynı 20 cevabı aynı sırada tutmak zorundadır.
+- **Kurulum başına tek dil.** Dil pakete gömülür; uygulama içinde dil değiştirme yoktur. Değiştirmek için diğer `.rpk` kurulur.
 - **Tek girdi mekanizması.** Yalnızca dokunma; ayar ekranı, geçmiş, ses yok.
 - **Arka plan yürütme yok.** Uygulama kapalıyken hiçbir şey çalışmaz.
 - **`npm audit`**, `aiot-toolkit`'in dolaylı dev bağımlılıklarında güvenlik açıkları raporlar. Yalnızca derleme zamanı; `.rpk` içinde hiçbir şey taşınmaz.

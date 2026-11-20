@@ -9,7 +9,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/platform-Xiaomi%20Vela-blue" alt="Platform: Xiaomi Vela">
   <img src="https://img.shields.io/badge/device-Redmi%20Watch%204-orange" alt="Device: Redmi Watch 4">
-  <img src="https://img.shields.io/badge/version-1.0.0-green" alt="Version 1.0.0">
+  <img src="https://img.shields.io/badge/version-1.1.0-green" alt="Version 1.1.0">
   <img src="https://img.shields.io/badge/license-GPLv3-blue" alt="License: GPLv3">
 </p>
 
@@ -17,7 +17,7 @@
 
 <p align="center">Türkçe sürüm: <a href="README-TR.md">README-TR.md</a></p>
 
-A Magic 8 Ball — the classic toy [from 1950](https://en.wikipedia.org/wiki/Magic_8_Ball) — rebuilt as a single-screen `.rpk` for the Redmi Watch 4. All 20 canonical answers are on board, chosen uniformly at random. Built on the [rw4-poc](https://github.com/hyperpostulate/rw4-poc) boilerplate, so it stays inside everything the device actually allows: no text rendering, no canvas, no network.
+A Magic 8 Ball — the classic toy [from 1950](https://en.wikipedia.org/wiki/Magic_8_Ball) — rebuilt as a single-screen `.rpk` for the Redmi Watch 4. All 20 canonical answers are on board, chosen uniformly at random. In **English and Turkish**: one build produces an `.en.rpk` and a `.tr.rpk`. Built on the [rw4-poc](https://github.com/hyperpostulate/rw4-poc) boilerplate, so it stays inside everything the device actually allows: no text rendering, no canvas, no network.
 
 * * *
 
@@ -47,6 +47,8 @@ One screen, three states, one input: **tap anywhere**.
 | **Answer** | One of the 20 answers on the card, hint `Tap to ask again` | long pulse on settle |
 
 Answers are the canonical set, 10 affirmative / 5 non-committal / 5 negative, each with a 1/20 probability — the classic ball has no memory and no bias. The answer's tint carries the category: near-white for yes, silver-blue for unclear, pale rose for no.
+
+**Languages:** English and Turkish, selected at build time. The title stays `MAGIC 8 BALL` in both; the two hints and all 20 answers are translated. `npm run build` writes both packages from the same app id, so installing the other one switches the language in place.
 
 ```
 ┌───────────────────────────────┐    ┌───────────────────────────────┐
@@ -79,19 +81,20 @@ The `.rpk` is installed over Bluetooth from an Android phone using the **[Notify
 
 ### Steps
 
-1. Build the package: `npm run build` → `dist/com.hyperpostulate.rw4magic8ball.debug.1.0.0.rpk`.
+1. Build the packages: `npm run build` → `dist/com.hyperpostulate.rw4magic8ball.debug.1.1.0.en.rpk` and `…​.tr.rpk`.
 2. Open **Notify for Xiaomi**.
 3. Go to **Device**.
 4. Select **Third party app**.
-5. Select the `.rpk` file.
+5. Select the `.rpk` file for the language you want (`.en` or `.tr`).
 6. Keep the watch near the phone and follow the guided steps.
-7. When the installation finishes, **Magic 8 Ball** appears in the watch's app list.
+7. When the installation finishes, **Magic 8 Ball** appears in the watch's app list — in the language of the package you installed.
 
 ### Notes
 
 - The debug-signed `.rpk` produced by `npm run build` is fine for this app: Vela only checks the certificate for watch↔phone Interconnect communication, which this app does not use.
 - Redmi Watch 4 limits: at most ~20 quick apps installed, and ~87 MB of free space is required for quick-app installs.
 - To update, build a new `.rpk` and install it over the same package name (`com.hyperpostulate.rw4magic8ball`). Changing the `package` value installs a **separate** app instead of updating.
+- **Switching language is just installing the other package**: both locales share the same app id, so `.tr.rpk` replaces `.en.rpk` on the watch instead of adding a second icon.
 - Unverified details: the app version that introduced `.rpk` installs, and whether the feature requires the (about €3, one-time) PRO purchase, are not officially documented. The menu labels above are the English ones; the app itself is localized, but the Turkish labels were not verified.
 
 Sources: [Notify for Xiaomi VelaJS install guide](https://mibandnotify.com/xiaomi-mi-band/notify-xms-app-instructions.php) · [Google Play listing](https://play.google.com/store/apps/details?id=com.mc.xiaomi1)
@@ -112,13 +115,14 @@ Sources: [Notify for Xiaomi VelaJS install guide](https://mibandnotify.com/xiaom
 git clone https://github.com/hyperpostulate/rw4-magic8ball.git
 cd rw4-magic8ball
 npm install                          # Install the aiot-toolkit toolchain
-npm run build                        # Build a debug .rpk into dist/
+npm run build                        # Build a debug .rpk per locale into dist/ (.en + .tr)
+npm run build:tr                     # Build only one locale (build:en, build:tr)
 npm run release                      # Build a release .rpk (requires signing keys)
 npm run start                        # aiot start --watch (live development)
 python3 scripts/gen_assets.py        # Regenerate the PNG assets from code
 ```
 
-The build produces `dist/com.hyperpostulate.rw4magic8ball.debug.1.0.0.rpk`. The debug `.rpk` needs no signing; a release package needs `sign/private.pem` and `sign/certificate.pem` (generate with OpenSSL).
+The build produces `dist/com.hyperpostulate.rw4magic8ball.debug.1.1.0.en.rpk` and `dist/com.hyperpostulate.rw4magic8ball.debug.1.1.0.tr.rpk`. The debug `.rpk` needs no signing; a release package needs `sign/private.pem` and `sign/certificate.pem` (generate with OpenSSL).
 
 ### On-device checklist
 
@@ -143,13 +147,14 @@ rw4-magic8ball/
 │   ├── app.ux                 # app entry (onCreate/onDestroy)
 │   ├── common/
 │   │   ├── logo.png           # launcher icon: navy tile + ring + "8", 96x96
-│   │   ├── txt/               # title + two hints (generated)
-│   │   └── face/              # idle + 6 spinner + 20 answer faces (generated)
+│   │   ├── txt/               # title (shared) + <loc>/hint_ask, <loc>/hint_again (generated)
+│   │   └── face/              # <loc>/: idle + 6 spinner + 20 answer faces (generated)
 │   └── pages/
 │       └── index/
 │           └── index.ux       # the whole app: 3 images, state machine, styles
 ├── scripts/
-│   ├── gen_assets.py          # reproducible Pillow generator for all 31 PNGs
+│   ├── gen_assets.py          # reproducible Pillow generator for all 60 PNGs (en + tr)
+│   ├── build.py               # one .rpk per locale (this is `npm run build`)
 │   └── assets/
 │       ├── ui-subset.ttf          # DejaVu Sans Book (generation time only)
 │       └── DejaVuSans-Bold.ttf    # generation time only
@@ -172,7 +177,8 @@ rw4-magic8ball/
 | :-- | :-- |
 | `src/manifest.json` | Vela app manifest: `package` = `com.hyperpostulate.rw4magic8ball`, `name` = `Magic 8 Ball`, `deviceTypeList: ["watch"]`, `designWidth: 390`, `features: ["system.router", "system.vibrator"]` |
 | `src/pages/index/index.ux` | The whole app: template (title, face, hint), the idle→rolling→answer state machine, tap guard, timers, styles, generated asset names |
-| `scripts/gen_assets.py` | Generates the card faces, title, hints and launcher icon deterministically; stamps filenames with a content hash and rewrites the asset block in `index.ux` |
+| `scripts/gen_assets.py` | Generates the card faces, title, hints and launcher icon for both locales deterministically; stamps filenames with a content hash and rewrites the asset block in `index.ux` |
+| `scripts/build.py` | Flips `LOCALE`, runs `aiot build`, and publishes `dist/<pkg>.<mode>.<version>.<loc>.rpk` for each locale |
 | `docs/design.md` | The authoritative UI spec (palette, geometry, typography, motion, copy list) |
 
 * * *
@@ -186,7 +192,7 @@ Every number is in **[docs/design.md](docs/design.md)**. The short version:
 - Canvas 390×450; content stops at y = 398 because the curved glass crops the corners.
 - Title 320×34 at (35,34); card 310×280 at (40,86); hint 320×24 at (35,374).
 - Answer box 242×184 inside the card, 30 px DejaVu Sans Book, 38 px line height, greedy wrap, max 3 lines — the generator downshifts to 28/26 px if any answer would overflow, and asserts the block fits.
-- 31 PNGs, 3 `<image>` nodes on screen.
+- 60 PNGs (both locales), 3 `<image>` nodes on screen.
 
 ### Why everything is a PNG
 
@@ -211,7 +217,8 @@ Verified on a **real Redmi Watch 4**. Full detail — including the complete sys
 ## Limitations
 
 - **No network, no GPS, no sensors.** The answers are a fixed local list; nothing is fetched or computed from the environment.
-- **Text must be images.** Adding or editing an answer means editing `ANSWERS` in `scripts/gen_assets.py`, re-running the generator and rebuilding — the copy is compiled into PNGs, not stored as strings.
+- **Text must be images.** Adding or editing an answer means editing `LOCALES` in `scripts/gen_assets.py`, re-running the generator and rebuilding — the copy is compiled into PNGs, not stored as strings. Both languages must keep the same 20 answers in the same order.
+- **One language per install.** The language is baked into the package; there is no in-app language switch. Change it by installing the other `.rpk`.
 - **One input mechanism.** Only tap; there is no settings screen, no history, no sound.
 - **No background execution.** Nothing runs while the app is closed.
 - **`npm audit` reports vulnerabilities in transitive dev dependencies** of `aiot-toolkit`. They are build-time only and do not ship inside the `.rpk`.

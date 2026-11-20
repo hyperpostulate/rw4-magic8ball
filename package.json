@@ -1,6 +1,6 @@
 {
   "name": "rw4-magic8ball",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Magic 8 Ball for the Redmi Watch 4 as a Xiaomi Vela quick app; every visible pixel is a pre-rendered PNG because the runtime draws no text.",
   "engines": {
@@ -8,7 +8,9 @@
   },
   "scripts": {
     "start": "aiot start --watch",
-    "build": "aiot build",
+    "build": "python3 scripts/build.py",
+    "build:en": "python3 scripts/build.py en",
+    "build:tr": "python3 scripts/build.py tr",
     "release": "aiot release"
   },
   "devDependencies": {

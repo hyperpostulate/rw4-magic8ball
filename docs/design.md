@@ -57,21 +57,33 @@ downsample), and must be non-blank. They live under `src/common/`.
 
 | Filename | Size | Content | Used by |
 | :--- | ---: | :--- | :--- |
-| `logo.png` | 96×96 | Navy rounded tile, steel ring, bold "8" | Launcher icon (unversioned) |
-| `txt/title_<stamp>.png` | 320×34 | `MAGIC 8 BALL`, bold 22 px, ls 3 px, title tint | All states |
-| `txt/hint_ask_<stamp>.png` | 320×24 | `Tap to seek answer…`, 18 px, muted | Idle / rolling |
-| `txt/hint_again_<stamp>.png` | 320×24 | `Tap to ask again`, 18 px, muted | Answer |
-| `face/idle_<stamp>.png` | 310×280 | Card + ring (Ø 104) + bold "8" (56 px) | Idle |
-| `face/roll0..5_<stamp>.png` | 310×280 | Card + ring + 90° arc stepping 60°/frame | Rolling (6 frames) |
-| `face/ans00..19_<stamp>.png` | 310×280 | Card + wrapped answer text | Answer (20) |
+| `logo.png` | 96×96 | Navy rounded tile, steel ring, bold "8" | Launcher icon (unversioned, locale-independent) |
+| `txt/title_<stamp>.png` | 320×34 | `MAGIC 8 BALL`, bold 22 px, ls 3 px, title tint | All states, **shared by every locale** |
+| `txt/<loc>/hint_ask_<stamp>.png` | 320×24 | `Tap to seek answer…` / `Cevap için dokun…`, 18 px, muted | Idle / rolling |
+| `txt/<loc>/hint_again_<stamp>.png` | 320×24 | `Tap to ask again` / `Tekrar sormak için dokun`, 18 px, muted | Answer |
+| `face/<loc>/idle_<stamp>.png` | 310×280 | Card + ring (Ø 104) + bold "8" (56 px) | Idle |
+| `face/<loc>/roll0..5_<stamp>.png` | 310×280 | Card + ring + 90° arc stepping 60°/frame | Rolling (6 frames) |
+| `face/<loc>/ans00..19_<stamp>.png` | 310×280 | Card + wrapped answer text | Answer (20) |
 
-31 PNGs total. **3 `<image>` nodes are on screen at any moment** (title, face, hint); the
-face swaps `src` and the hint swaps `src`. No other nodes are needed.
+`<loc>` is `en` or `tr`. **60 PNGs total** (1 logo + 1 shared title + 2 × 29 per locale).
+The title is the product name and is deliberately **not** translated: `MAGIC 8 BALL` stays
+English in every locale; only the hints and the 20 answers change.
 
-`<stamp>` is an 8-hex content stamp computed from the copy + geometry constants. The watch
-caches image resources by path across installs, so changing copy or geometry changes the
-stamp and therefore every filename; `gen_assets.py` rewrites the generated constants block
-inside `index.ux` to match.
+**3 `<image>` nodes are on screen at any moment** (title, face, hint); the face swaps `src`
+and the hint swaps `src`. No other nodes are needed.
+
+The locale is fixed at **build time**, not chosen at runtime: `index.ux` reads
+`const LOCALE` from the generated block and looks every path up in a `COPY` table, so the
+runtime has no language branch and only one locale's assets are ever opened. Both locales'
+PNGs ship inside both packages (they are small); `scripts/build.py` flips `LOCALE` and runs
+`aiot build` once per locale, producing `dist/<package>.debug.<version>.en.rpk` and
+`.tr.rpk` from the **same package name** — installing the other one updates the app in
+place instead of adding a second launcher entry.
+
+`<stamp>` is an 8-hex content stamp computed from the palette + geometry + **both locales'
+copy**. The watch caches image resources by path across installs, so changing copy or
+geometry changes the stamp and therefore every filename; `gen_assets.py` rewrites the
+generated constants block inside `index.ux` to match.
 
 `logo.png` is deliberately **96×96**: the launcher derives the app-name offset from the
 icon's pixel size, and 192×192 pushes the name into the middle of the row (verified on
@@ -119,38 +131,46 @@ break the visual flow.
 
 ## 7. Copy
 
-| Slot | String |
-| :--- | :--- |
-| Title | `MAGIC 8 BALL` |
-| Hint, idle/rolling | `Tap to seek answer…` |
-| Hint, answer | `Tap to ask again` |
+| Slot | English (`en`) | Turkish (`tr`) |
+| :--- | :--- | :--- |
+| Title | `MAGIC 8 BALL` | `MAGIC 8 BALL` (not translated) |
+| Hint, idle/rolling | `Tap to seek answer…` | `Cevap için dokun…` |
+| Hint, answer | `Tap to ask again` | `Tekrar sormak için dokun` |
 
-Answers (index → category → string):
+Answers (index → category → string). **Index and category are identical in every
+locale**, because the runtime picks `ans<i>` from the active locale's array by the same
+index; only the string changes.
 
-| # | Cat | String |
-| ---: | :--- | :--- |
-| 00 | affirmative | `It is certain.` |
-| 01 | affirmative | `It is decidedly so.` |
-| 02 | affirmative | `Without a doubt.` |
-| 03 | affirmative | `Yes definitely.` |
-| 04 | affirmative | `You may rely on it.` |
-| 05 | affirmative | `As I see it, yes.` |
-| 06 | affirmative | `Most likely.` |
-| 07 | affirmative | `Outlook good.` |
-| 08 | affirmative | `Yes.` |
-| 09 | affirmative | `Signs point to yes.` |
-| 10 | non-committal | `Reply hazy, try again.` |
-| 11 | non-committal | `Ask again later.` |
-| 12 | non-committal | `Better not tell you now.` |
-| 13 | non-committal | `Cannot predict now.` |
-| 14 | non-committal | `Concentrate and ask again.` |
-| 15 | negative | `Don't count on it.` |
-| 16 | negative | `My reply is no.` |
-| 17 | negative | `My sources say no.` |
-| 18 | negative | `Outlook not so good.` |
-| 19 | negative | `Very doubtful.` |
+| # | Cat | English | Turkish |
+| ---: | :--- | :--- | :--- |
+| 00 | affirmative | `It is certain.` | `Kesinlikle öyle.` |
+| 01 | affirmative | `It is decidedly so.` | `Hiç kuşkusuz öyle.` |
+| 02 | affirmative | `Without a doubt.` | `Şüphesiz.` |
+| 03 | affirmative | `Yes definitely.` | `Kesinlikle evet.` |
+| 04 | affirmative | `You may rely on it.` | `Buna güvenebilirsin.` |
+| 05 | affirmative | `As I see it, yes.` | `Bence evet.` |
+| 06 | affirmative | `Most likely.` | `Büyük ihtimalle.` |
+| 07 | affirmative | `Outlook good.` | `Görünüm iyi.` |
+| 08 | affirmative | `Yes.` | `Evet.` |
+| 09 | affirmative | `Signs point to yes.` | `İşaretler evet diyor.` |
+| 10 | non-committal | `Reply hazy, try again.` | `Cevap belirsiz, tekrar sor.` |
+| 11 | non-committal | `Ask again later.` | `Sonra tekrar sor.` |
+| 12 | non-committal | `Better not tell you now.` | `Şimdi söylemeyeyim.` |
+| 13 | non-committal | `Cannot predict now.` | `Şu an tahmin edemem.` |
+| 14 | non-committal | `Concentrate and ask again.` | `Odaklan ve tekrar sor.` |
+| 15 | negative | `Don't count on it.` | `Buna güvenme.` |
+| 16 | negative | `My reply is no.` | `Cevabım hayır.` |
+| 17 | negative | `My sources say no.` | `Kaynaklarım hayır diyor.` |
+| 18 | negative | `Outlook not so good.` | `Görünüm pek iyi değil.` |
+| 19 | negative | `Very doubtful.` | `Çok şüpheli.` |
 
 Uniform 1/20 probability, no weighting: the classic ball has no memory and no bias.
+
+**Adding a locale:** add an entry to `LOCALES` in `gen_assets.py` (same 20 answers, same
+order and categories), add the code to `LOCALE_ORDER` in both `gen_assets.py` and
+`scripts/build.py`, re-run the generator, rebuild. The generator asserts that every
+character of every locale actually renders ink in both shipped fonts, so a missing glyph
+fails the build instead of silently drawing tofu.
 
 ## 8. Generator rules
 
@@ -165,7 +185,13 @@ Uniform 1/20 probability, no weighting: the classic ball has no memory and no bi
 - The generated block in `index.ux` between `// __ASSETS_BEGIN__` and `// __ASSETS_END__` is
   rewritten in place; the script asserts it found exactly one block.
 - The script is deterministic: same copy + geometry ⇒ byte-identical PNGs. Run it any time;
-  it wipes `src/common/txt/` and `src/common/face/` first.
+  it wipes `src/common/txt/` and `src/common/face/` (including the locale subdirectories) first.
+- Both locales are generated in a single run, into `txt/<loc>/` and `face/<loc>/`; the shared
+  title and the launcher icon stay at the top level of `txt/` and `common/`.
+- `scripts/build.py` (wired to `npm run build`) flips `const LOCALE` in `index.ux`, runs
+  `aiot build`, and stages each package as `dist/<package>.<mode>.<version>.<loc>.rpk` before
+  publishing them together — `aiot build` clears `dist/` on every run, so the variants cannot
+  accumulate without the staging step. The script always restores `LOCALE = 'en'` afterwards.
 
 ## 9. Wireframes
 
