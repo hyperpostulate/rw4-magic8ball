@@ -74,11 +74,16 @@ and the hint swaps `src`. No other nodes are needed.
 
 The locale is fixed at **build time**, not chosen at runtime: `index.ux` reads
 `const LOCALE` from the generated block and looks every path up in a `COPY` table, so the
-runtime has no language branch and only one locale's assets are ever opened. Both locales'
-PNGs ship inside both packages (they are small); `scripts/build.py` flips `LOCALE` and runs
-`aiot build` once per locale, producing `dist/<package>.debug.<version>.en.rpk` and
-`.tr.rpk` from the **same package name** — installing the other one updates the app in
-place instead of adding a second launcher entry.
+runtime has no language branch.
+
+**Each package carries only its own locale.** `scripts/build.py` flips `LOCALE`, moves the
+other locale's `face/<loc>/` and `txt/<loc>/` trees out of `src/` for the duration of that
+build (and restores them in a `finally`), runs `aiot build`, and repeats for the next
+locale. The build packs everything under `src/`, and PNGs barely compress, so without that
+step every `.rpk` would carry ~430 KB of unused faces — a package is ~470 KB with one
+locale and ~920 KB with both. Output: `dist/<package>.debug.<version>.en.rpk` and `.tr.rpk`
+from the **same package name** — installing the other one updates the app in place instead
+of adding a second launcher entry.
 
 `<stamp>` is an 8-hex content stamp computed from the palette + geometry + **both locales'
 copy**. The watch caches image resources by path across installs, so changing copy or

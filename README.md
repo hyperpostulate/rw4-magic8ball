@@ -48,7 +48,7 @@ One screen, three states, one input: **tap anywhere**.
 
 Answers are the canonical set, 10 affirmative / 5 non-committal / 5 negative, each with a 1/20 probability — the classic ball has no memory and no bias. The answer's tint carries the category: near-white for yes, silver-blue for unclear, pale rose for no.
 
-**Languages:** English and Turkish, selected at build time. The title stays `MAGIC 8 BALL` in both; the two hints and all 20 answers are translated. `npm run build` writes both packages from the same app id, so installing the other one switches the language in place.
+**Languages:** English and Turkish, selected at build time. The title stays `MAGIC 8 BALL` in both; the two hints and all 20 answers are translated. `npm run build` writes both packages from the same app id, so installing the other one switches the language in place. Each package carries only its own locale's images (~470 KB), not both.
 
 ```
 ┌───────────────────────────────┐    ┌───────────────────────────────┐
@@ -178,7 +178,7 @@ rw4-magic8ball/
 | `src/manifest.json` | Vela app manifest: `package` = `com.hyperpostulate.rw4magic8ball`, `name` = `Magic 8 Ball`, `deviceTypeList: ["watch"]`, `designWidth: 390`, `features: ["system.router", "system.vibrator"]` |
 | `src/pages/index/index.ux` | The whole app: template (title, face, hint), the idle→rolling→answer state machine, tap guard, timers, styles, generated asset names |
 | `scripts/gen_assets.py` | Generates the card faces, title, hints and launcher icon for both locales deterministically; stamps filenames with a content hash and rewrites the asset block in `index.ux` |
-| `scripts/build.py` | Flips `LOCALE`, runs `aiot build`, and publishes `dist/<pkg>.<mode>.<version>.<loc>.rpk` for each locale |
+| `scripts/build.py` | Flips `LOCALE`, moves the other locale's assets out of `src/` so each package carries only its own language, runs `aiot build`, and publishes `dist/<pkg>.<mode>.<version>.<loc>.rpk` for each locale |
 | `docs/design.md` | The authoritative UI spec (palette, geometry, typography, motion, copy list) |
 
 * * *

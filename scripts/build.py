@@ -38,6 +38,11 @@ DEFAULT_LOCALE = "en"
 LOCALE_ORDER = ("en", "tr")
 
 LOCALE_LINE = re.compile(r"^const LOCALE = '[a-z]{2}'$", re.M)
+# Generated per-locale asset trees inside src/common. The build packs everything
+# under src/, so a locale that is not the active one is moved aside while its
+# package is compiled; otherwise every .rpk carries the other language's faces
+# and doubles in size (PNGs do not compress).
+LOCALE_ASSET_KINDS = ("face", "txt")
 
 
 def _set_locale(loc):
@@ -65,6 +70,46 @@ def _assets_present():
     if missing:
         raise SystemExit("missing generated PNGs (run scripts/gen_assets.py): %s"
                          % ", ".join(missing[:5]))
+
+
+def _stash_inactive_locales(active, stash_root):
+    """Move every other locale's asset dirs out of src/ so they are not packed."""
+    moved = []
+    for loc in LOCALE_ORDER:
+        if loc == active:
+            continue
+        for kind in LOCALE_ASSET_KINDS:
+            src = os.path.join(ROOT, "src", "common", kind, loc)
+            if not os.path.isdir(src):
+                continue
+            dst = os.path.join(stash_root, kind, loc)
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            os.replace(src, dst)
+            moved.append((src, dst))
+    return moved
+
+
+def _unstash(moved):
+    for src, dst in moved:
+        os.makedirs(os.path.dirname(src), exist_ok=True)
+        os.replace(dst, src)
+
+
+def _unstash_from(stash_root):
+    """Recover trees left behind by an interrupted run (crash / SIGKILL)."""
+    if not os.path.isdir(stash_root):
+        return
+    for kind in LOCALE_ASSET_KINDS:
+        for loc in LOCALE_ORDER:
+            src = os.path.join(stash_root, kind, loc)
+            if not os.path.isdir(src):
+                continue
+            dst = os.path.join(ROOT, "src", "common", kind, loc)
+            print("restoring interrupted build: %s" % os.path.relpath(dst, ROOT))
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            if os.path.isdir(dst):
+                shutil.rmtree(dst)
+            os.replace(src, dst)
 
 
 def _aiot_build():
@@ -95,6 +140,10 @@ def main(argv):
         raise SystemExit("unknown locale(s): %s (expected: %s)"
                          % (", ".join(unknown), ", ".join(LOCALE_ORDER)))
 
+    # A hard kill during a build can leave the stashed locale trees behind; put
+    # them back before validating anything, otherwise they would be deleted.
+    _unstash_from(os.path.join(ROOT, ".rpk-staging", "src"))
+
     _assets_present()
     manifest = _manifest()
     base = "%s.%s.%s" % (manifest["package"],
@@ -112,7 +161,11 @@ def main(argv):
     try:
         for loc in wanted:
             _set_locale(loc)
-            _aiot_build()
+            moved = _stash_inactive_locales(loc, os.path.join(staging, "src"))
+            try:
+                _aiot_build()
+            finally:
+                _unstash(moved)
             made.append(_rename_newest(base, loc, staging))
     finally:
         _set_locale(DEFAULT_LOCALE)

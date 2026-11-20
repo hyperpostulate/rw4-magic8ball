@@ -48,7 +48,7 @@ Tek ekran, üç durum, tek girdi: **ekranın herhangi bir yerine dokun**.
 
 Cevaplar klasik kümedir: 10 olumlu, 5 kararsız, 5 olumsuz; her biri 1/20 olasılıkla gelir — klasik topun hafızası da yanlılığı da yoktur. Cevabın rengi kategorisini taşır: olumluda beyaza yakın, kararsızda gümüş mavisi, olumsuzda soluk gül.
 
-**Diller:** İngilizce ve Türkçe, derleme zamanında seçilir. Başlık ikisinde de `MAGIC 8 BALL` kalır; iki ipucu ve 20 cevabın tamamı çevrilir. `npm run build` iki paketi de aynı uygulama kimliğiyle üretir, yani diğerini kurmak dili yerinde değiştirir.
+**Diller:** İngilizce ve Türkçe, derleme zamanında seçilir. Başlık ikisinde de `MAGIC 8 BALL` kalır; iki ipucu ve 20 cevabın tamamı çevrilir. `npm run build` iki paketi de aynı uygulama kimliğiyle üretir, yani diğerini kurmak dili yerinde değiştirir. Her paket yalnızca kendi dilinin görsellerini taşır (~470 KB), ikisini birden değil.
 
 ```
 ┌───────────────────────────────┐    ┌───────────────────────────────┐
@@ -178,7 +178,7 @@ rw4-magic8ball/
 | `src/manifest.json` | Vela manifesti: `package` = `com.hyperpostulate.rw4magic8ball`, `name` = `Magic 8 Ball`, `deviceTypeList: ["watch"]`, `designWidth: 390`, `features: ["system.router", "system.vibrator"]` |
 | `src/pages/index/index.ux` | Uygulamanın tamamı: şablon (başlık, yüz, ipucu), boşta→dönüş→cevap durum makinesi, dokunma koruması, zamanlayıcılar, stiller, üretilmiş varlık adları |
 | `scripts/gen_assets.py` | İki dil için kart yüzlerini, başlığı, ipuçlarını ve simgeyi belirlenimci biçimde üretir; dosya adlarına içerik damgası koyar ve `index.ux` içindeki varlık bloğunu kendisi günceller |
-| `scripts/build.py` | `LOCALE` değerini değiştirir, `aiot build` çalıştırır ve her dil için `dist/<paket>.<mod>.<sürüm>.<dil>.rpk` yayımlar |
+| `scripts/build.py` | `LOCALE` değerini değiştirir, diğer dilin görsellerini `src/` dışına taşır (böylece her paket yalnızca kendi dilini taşır), `aiot build` çalıştırır ve her dil için `dist/<paket>.<mod>.<sürüm>.<dil>.rpk` yayımlar |
 | `docs/design.md` | Yetkili arayüz spesifikasyonu (palet, geometri, tipografi, hareket, metin listesi) |
 
 * * *
