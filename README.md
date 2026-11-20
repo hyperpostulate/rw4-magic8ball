@@ -1,5 +1,9 @@
 <!-- Language: English | [Türkçe](README-TR.md) -->
 
+<p align="center">
+  <img src="src/common/logo.png" alt="Magic 8 Ball" width="96" height="96">
+</p>
+
 <h1 align="center">rw4-magic8ball — Magic 8 Ball for the Redmi Watch 4</h1>
 
 <p align="center">
